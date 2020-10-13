@@ -1,0 +1,1624 @@
+<script src="{{ 'https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js' }}"></script>
+
+<!--====== Slick js ======-->
+<script src="{{ 'slick.min.js' | asset_url }}" defer="defer"></script>
+
+<!--====== Nice Select js ======-->
+<script src="{{ 'jquery.nice-select.js' | asset_url }}" defer="defer"></script>
+<script src="{{ 'jquery.nice-select.min.js' | asset_url }}" defer="defer"></script>
+
+<script>
+  var isbackpage = false;
+  if (window.performance && window.performance.navigation.type == window.performance.navigation.TYPE_BACK_FORWARD) {
+   	  isbackpage = true;
+  }
+  
+  {% assign collection_handle = collection.handle %}
+  {% assign product_count = collections[collection_handle].all_products_count %}
+  
+  console.log('1',{{product_count}});
+  console.log('2',{{product_count}});
+              
+  
+  var totalProducts = "{{product_count}}";
+  var totalProductsA = 0;
+  var allProductsGet = [];
+  var defaultSlide = 0;
+  var paginationHtml = '';
+  var NotMatch = "{{ 'collections.general.no_matches' | t }}";
+  var IsFirstTime = true;
+   
+  
+  
+    	{% paginate collections[collection_handle].products by 500 %}
+    
+          {% for product in collections[collection_handle].products %}
+     			var productdetail = {{product | json}};
+            var productFeatures = {
+              
+              "Manufacturer" : "{{product.metafields.global.Manufacturer|strip_newlines}}",
+              "Model" : "{{product.metafields.global.Model|strip_newlines}}",
+              
+              "Transmission" : "{{product.metafields.global.Transmission |strip_newlines}}",
+              
+              "Vehicle": "{{product.metafields.global.Vehicle |strip_newlines}}",
+              
+              "Year" : "{{product.metafields.global.Year |strip_newlines}}",
+              
+              "EngineCode": "{{product.metafields.global.EngineCode |strip_newlines}}",
+              "CollectionTitle" : "{{collections[collection_handle].title|strip_newlines}}",
+              "CrossReferenceOEM" : "{{product.metafields.global.Cross-Reference-OEM | strip_newlines}}",
+              "PartNumber" : "{{product.metafields.global.Part-Number |strip_newlines}}",
+              "TagString" : "{{product.tags | join: ', ' |strip_newlines}}",
+              "customImage" : "{{ product.featured_media | img_url: '95x95', scale: 2 }}",
+              "URL" : "{{product.url}}",
+              "FPrice" : "{{product.price| money}}",
+            };
+  
+   			var full_product_detail = $.extend({}, productdetail, productFeatures);
+  
+            allProductsGet.push(full_product_detail);
+          {% endfor %}
+  
+  			paginationHtml = '<ul class="list--inline pagination" style="display:block;">{% unless paginate.previous.is_link %}<li aria-hidden="true"><button class="btn btn--tertiary btn--narrow" disabled>{% include 'icon-arrow-left' %}<span class="icon__fallback-text">{{ 'general.pagination.previous' | t }}</span></button></li>{% else %}<li><a href="{{ paginate.previous.url }}" class="btn btn--tertiary btn--narrow">{% include 'icon-arrow-left' %}<span class="icon__fallback-text">{{ 'general.pagination.previous' | t }}</span></a></li>{% endunless %}<li class="pagination__text">{{ 'general.pagination.current_page' | t: current: paginate.current_page, total: paginate.pages }}</li>{% unless paginate.next.is_link %}<li aria-hidden="true"><button class="btn btn--tertiary btn--narrow" disabled>{% include 'icon-arrow-right' %}<span class="icon__fallback-text">{{ 'general.pagination.next' | t }}</span></button></li>{% else %}<li><a href="{{ paginate.next.url }}" class="btn btn--tertiary btn--narrow">{% include 'icon-arrow-right' %}<span class="icon__fallback-text">{{ 'general.pagination.next' | t }}</span></a></li>{% endunless %}</ul>';		
+            
+       	{% endpaginate %}  
+                        
+                             
+   
+  $(document).ready(function(){
+     
+//     SetProducts();
+    GetUrlANDManage();
+     $("#mypagination").html(paginationHtml);
+  });
+  
+  function GetUrlANDManage(){
+    var url = window.location.href;
+    var domain = window.location.origin; 
+    url = url.replace(domain, '');
+    if(url.indexOf("?") != -1){
+      var a = url.indexOf("?");
+      var b =  url.substring(a);
+      var c = url.replace(b,"");
+      url = c;
+    }
+    console.log(url);
+    $(".category_chk").each(function(index, element){
+    	var data_url = $(this).attr('data-url');
+      	if(url == data_url){
+        	$(this).prop("checked", true);
+        }
+    });
+  
+    SetProducts(isbackpage);
+  }
+  
+  function SetProducts(isRefresh = false){
+    
+    if(isRefresh == true){
+      $('#search_text').val('');
+      
+      $('select[name="sel_model"]').val('');
+      $('select[name="sel_transmission"]').val('');
+      $('select[name="sel_vehicle"]').val('');
+      $('select[name="sel_year"]').val('');
+      $('select[name="sel_EngineCode"]').val('');
+
+      if(isbackpage == true){
+        $('select[name="sel_manufacturer"]').val('');
+         $('input[name="product_types"]').prop('checked', false);
+        
+        isbackpage = false;
+    	
+      }
+      
+      $('select').niceSelect('update'); 
+    }
+    
+    var manufacturer = [];
+    var model = [];
+    var transmission = [];
+    var vehicle = [];
+    var year = [];
+    var engineCode = [];
+    
+    var sel_product_type = $('input[name="product_types"]:checked').val();
+    var sel_product_category = $('input[name="product-category"]:checked').val();
+    var search_text = $('#search_text').val();
+    var sel_manufacturer = $('select[name="sel_manufacturer"]').val();
+    var sel_model = $('select[name="sel_model"]').val();
+    var sel_transmission = $('select[name="sel_transmission"]').val();
+    var sel_vehicle = $('select[name="sel_vehicle"]').val();
+    var sel_year = $('select[name="sel_year"]').val();
+    var sel_EngineCode = $('select[name="sel_EngineCode"]').val();
+    
+    
+    
+    //console.log(sel_product_type+'|'+sel_product_category+'|'+search_text+'|'+sel_manufacturer+'|'+sel_model+'|'+sel_transmission+'|'+sel_vehicle+'|'+sel_year+'|'+sel_EngineCode);
+    
+    
+    $('header.section-header.text-center h1').html(sel_product_category);
+    var products = {};
+    
+    var is_product_type = true;
+    var is_search_text = true;
+    var is_product_category = true;
+    var is_manufacturer = true;
+    var is_model = true;
+    var is_transmission = true;
+    var is_vehicle = true;
+    var is_year = true;
+    var is_EngineCode = true;
+    
+    var is_bind_options = false;
+    
+    var is_searchby_category = false;
+    
+    
+    $.each(allProductsGet,function(index,product){
+      
+    
+    	var isSearchProduct = false;
+      
+     if(sel_product_type != undefined){
+       	
+       	is_bind_options = true;
+       	is_searchby_category = false;
+       	
+       	var ptypes = product.type;
+       
+        ptypes = ptypes.toLowerCase();
+        ptypes = ptypes.replace(/ /g,'');
+        sel_product_type =  sel_product_type.toLowerCase(); 
+        sel_product_type = sel_product_type.replace(/ /g,'');
+       
+        if(ptypes.indexOf(sel_product_type) == -1 ){
+           is_product_type = false;
+        } else {
+        	is_product_type = true;
+        }
+      }
+    
+      if(sel_product_category != undefined){
+        
+        is_bind_options = true;
+        is_searchby_category = true;
+        
+        var collection_title = product.CollectionTitle;  
+        collection_title = collection_title.toLowerCase();
+        collection_title = collection_title.replace(/ /g,'');
+        sel_product_category =  sel_product_category.toLowerCase(); 
+        sel_product_category = sel_product_category.replace(/ /g,'');
+           
+        if(collection_title.indexOf(sel_product_category) == -1 ){
+           is_product_category = false;
+        } else {
+        	is_product_category = true;
+        }
+      }
+
+      if(sel_manufacturer != null){
+        
+        is_bind_options = true;
+        is_searchby_category = false;
+        
+        var Manufacturer = product.Manufacturer;  
+        Manufacturer = Manufacturer.toLowerCase();
+        Manufacturer = Manufacturer.replace(/ /g,'');
+        sel_manufacturer =  sel_manufacturer.toLowerCase(); 
+        sel_manufacturer = sel_manufacturer.replace(/ /g,'');
+        //console.log(Manufacturer);
+        if(Manufacturer != sel_manufacturer ){
+           is_manufacturer = false;
+        } else {
+           is_manufacturer = true;
+        }
+      }
+           
+      if(sel_model != null){
+        
+        is_bind_options = false;
+        is_searchby_category = false;
+        
+        var model_string = product.Model;
+        model_string = model_string.toLowerCase();
+        model_string = model_string.replace(/ /g,'');
+        sel_model =  sel_model.toLowerCase();
+        sel_model = sel_model.replace(/ /g,'');
+        
+        //console.log(model_string.indexOf(sel_model) + sel_model);
+        if(model_string.indexOf(sel_model) == -1){
+           is_model = false;
+      	} else {
+           is_model = true;
+        }
+      }
+           
+      if(sel_transmission != null){
+        
+        is_bind_options = false;
+        is_searchby_category = false;
+        
+        var transmission_string = product.Transmission;
+        transmission_string = transmission_string.toLowerCase();
+        transmission_string = transmission_string.replace(/ /g,'');
+        sel_transmission =  sel_transmission.toLowerCase();
+        sel_transmission = sel_transmission.replace(/ /g,'');
+        //console.log(transmission_string.indexOf(sel_transmission)+'|'+sel_transmission);
+        if(transmission_string.indexOf(sel_transmission) == -1 ){
+           is_transmission = false;
+      	} else {
+           is_transmission = true;
+        }
+           
+      }
+           
+      if(sel_vehicle != null){
+       	
+        is_bind_options = false;
+        is_searchby_category = false;
+        
+        var vehicle_string = product.Vehicle;
+        vehicle_string = vehicle_string.toLowerCase();
+        vehicle_string = vehicle_string.replace(/ /g,'');
+        sel_vehicle =  sel_vehicle.toLowerCase();
+        sel_vehicle = sel_vehicle.replace(/ /g,'');
+        
+        if(vehicle_string.indexOf(sel_vehicle) == -1 ){
+           is_vehicle = false;
+      	} else {
+           is_vehicle = true;
+        }
+      }
+           
+      if(sel_year != null){
+        
+        is_bind_options = false;
+        is_searchby_category = false;
+        
+        var year_string = product.Year;
+        year_string = year_string.toLowerCase();
+        year_string = year_string.replace(/ /g,'');
+        sel_year =  sel_year.toLowerCase();
+        sel_year = sel_year.replace(/ /g,'');
+        
+        if(year_string.indexOf(sel_year) == -1){
+           is_year = false;
+      	} else {
+           is_year = true;
+        }
+      }
+      
+      if(sel_EngineCode != null){
+        
+        is_bind_options = false;
+        is_searchby_category = false;
+        
+        var EngineCode_string = product.Engine;
+        EngineCode_string = EngineCode_string.toLowerCase();
+        EngineCode_string = EngineCode_string.replace(/ /g,'');
+        sel_EngineCode =  sel_EngineCode.toLowerCase();
+        sel_EngineCode = sel_EngineCode.replace(/ /g,'');
+        
+        if(EngineCode_string.indexOf(sel_EngineCode) == -1){
+           is_EngineCode = false;
+      	} else {
+           is_EngineCode = true;
+        }
+      }
+         
+         
+      if(search_text != ''){
+        
+        is_bind_options = false;
+        is_searchby_category = false;
+        
+        var search_string = product.id+product.title+product.type+product.CollectionTitle+product.Manufacturer+product.Model+product.Transmission+product.Vehicle+product.Year+product.Engine+product.CrossReferenceOEM+product.PartNumber;
+        search_string += product.TagString;
+        search_string = search_string.toLowerCase();
+        search_string = search_string.replace(/ /g,'');
+        search_text =  search_text.toLowerCase();
+        search_text =  search_text.replace(/ /g,'');
+          //console.log(search_string.indexOf(search_text));
+        if(search_string.indexOf(search_text) == -1 ){
+           is_search_text = false;
+        } else {
+          is_search_text = true;
+        }
+        
+      }
+          
+      if(search_text != '' || sel_product_type != undefined || sel_product_category != undefined || sel_manufacturer != null || 
+           sel_model != null || sel_transmission != null || sel_vehicle != null || sel_year != null || sel_EngineCode != null){
+          $("#ResetFilter").show();
+      } else {
+      	$("#ResetFilter").hide();
+      }
+        
+    	
+      if(is_product_type == true && is_product_category == true && is_manufacturer == true && is_model == true 
+          && is_transmission == true && is_vehicle == true && is_year == true && is_EngineCode == true && is_search_text == true ){
+         isSearchProduct = true;
+            totalProductsA = totalProducts;
+      }
+      
+      
+       		
+      if(isSearchProduct == true) { 
+        if(IsFirstTime == true){
+          manufacturer.push(product.Manufacturer);
+          
+        }
+        
+        model.push(product.Model);
+        transmission.push(product.Transmission);
+        vehicle.push(product.Vehicle);
+        year.push(product.Year);
+        engineCode.push(product.EngineCode);
+        
+      	products[product.id] = {
+              "id" :product.id,
+              "title" :product.title,
+              "type" :product.type,
+      		  "category" : product.CollectionTitle,
+          		"first_variants_id" : product.variants[0].id,
+      		  	"manufacturer": product.Manufacturer, 
+      			"model": product.Model,
+      			"transmission": product.Transmission,
+      			"vehicle": product.Vehicle,
+      			"year": product.Year,
+      			"EngineCode": product.EngineCode,
+          		"image" : product.customImage,
+          		"product_url" : product.URL,
+          		"price" : product.FPrice,
+          };
+      }
+      
+      
+    });
+    
+      
+      if(sel_product_type != undefined || sel_manufacturer != null || 
+           sel_model != null || sel_transmission != null || sel_vehicle != null || sel_year != null || sel_EngineCode != null){
+        
+          totalProductsA = Object.keys(products).length;
+      }  	
+    
+  $("#total_products").html(totalProductsA);
+  RanderProduct(products, 0,5);
+        
+      if(is_searchby_category == true){
+      
+      	  var selected = '';
+          if(sel_manufacturer == null){
+            selected = 'selected';
+          }
+          var manufacturer_html = '<option '+selected+' value="" disabled>Manufacturer</option>';
+          var manufacturer_uniqe = [];
+          
+          $.each(manufacturer,function(index,val){ 
+            if(($.inArray( val, manufacturer_uniqe ) == -1)){
+              if(val != '' && val != '-'){     
+                
+                if(val.length !== 0){
+                  var selected = '';
+                  if(sel_manufacturer == val){
+                      selected = 'selected';
+                  }
+
+                  manufacturer_html += '<option '+selected+' value="'+val+'" >'+val+'</option>';
+                  manufacturer_uniqe.push(val);
+                }
+              }
+            }
+          });       
+        	manufacturer_html += '<option value="">Reset this filter</option>';
+          $('#sel_manufacturer').html(manufacturer_html);
+        
+      }
+    
+        if(is_bind_options == true){
+        	
+//           var selected = '';
+//           if(sel_manufacturer == null){
+//             selected = 'selected';
+//           }
+//           var manufacturer_html = '<option '+selected+' value="" disabled>Manufacturer</option>';
+//           var manufacturer_uniqe = [];
+          
+//           $.each(manufacturer,function(index,val){ 
+//             if(($.inArray( val, manufacturer_uniqe ) == -1)){
+//               if(val != '' && val != '-'){     
+                
+//                 if(val.length !== 0){
+//                   var selected = '';
+//                   if(sel_manufacturer == val){
+//                       selected = 'selected';
+//                   }
+
+//                   manufacturer_html += '<option '+selected+' value="'+val+'" >'+val+'</option>';
+//                   manufacturer_uniqe.push(val);
+//                 }
+//               }
+//             }
+//           });       
+//           $('#sel_manufacturer').html(manufacturer_html);
+
+
+
+
+          var model_html = '<option selected="" value="" disabled>Model</option>';
+          var model_uniqe = [];
+          $.each(model,function(index,val){ 
+            var model_split = val.split(",");
+            $.each(model_split, function(index1, val1){
+              var model_split1 = val1.split("/");
+              $.each(model_split1, function(index2,val2){
+                 if(($.inArray( val2, model_uniqe ) == -1)){
+                 
+                   if(val2 != '' && val2 != '-' ){
+                     if(val2.length !== 0){
+                       //console.log(val2+'|'+val2.length);
+                      model_html += '<option value="'+val2+'">'+val2+'</option>';
+                      model_uniqe.push(val2);
+                     }
+                  }
+                }    
+              });
+            });          
+          }) ;  
+          model_html += '<option value="">Reset this filter</option>';
+          $('#sel_model').html(model_html);
+          if(sel_model){
+            $('.nice-select').removeClass('open');
+            $("#sel_model").val($("#sel_model option:first").val());
+          }
+
+
+          var transmission_html = '<option selected="" value="" disabled>Transmission</option>';
+          var transmission_uniqe = [];
+          $.each(transmission,function(index,val){          
+            if(($.inArray( val, transmission_uniqe ) == -1)){ 
+              if(val != '' && val != '-'){
+                if(val.length !== 0){
+                  transmission_html += '<option value="'+val+'">'+val+'</option>';
+                  transmission_uniqe.push(val);
+                }
+              }
+            }
+          })   
+          transmission_html += '<option value="">Reset this filter</option>';
+          $('#sel_transmission').html(transmission_html);
+//           if(sel_transmission){
+//             $('.nice-select').removeClass('open');
+//             $("#sel_transmission").val($("#sel_transmission option:first").val());
+//           }
+
+
+          var vehicle_html = '<option selected="" value="" disabled>Vehicle</option>';
+          var vehicle_uniqe = [];
+          $.each(vehicle,function(index,val){          
+            if(($.inArray( val, vehicle_uniqe ) == -1)){
+              if(val != '' && val != '-'){
+                if(val.length !== 0){
+                  vehicle_html += '<option value="'+val+'">'+val+'</option>';
+                  vehicle_uniqe.push(val);
+                }
+              }
+            }
+          }) 
+          vehicle_html += '<option value="">Reset this filter</option>';
+          $('#sel_vehicle').html(vehicle_html);
+          if(sel_vehicle){
+            $('.nice-select').removeClass('open');
+            $("#sel_vehicle").val($("#sel_vehicle option:first").val());
+          }
+
+
+          var year_html = '<option selected="" value="" disabled>Year</option>';
+          var year_uniqe = [];
+          $.each(year,function(index,val){          
+            if(($.inArray( val, year_uniqe ) == -1)){
+              var valM = val.replace(/ /g,'');
+              if(valM != '' && valM != '-'){
+                if(valM.length != 0){
+                  year_html += '<option value="'+val+'">'+val+'</option>';
+                  year_uniqe.push(val);
+                }
+              }
+            }
+          })  
+          year_html += '<option value="">Reset this filter</option>';
+          $('#sel_year').html(year_html);
+          if(sel_year){
+            $('.nice-select').removeClass('open');
+            $("#sel_year").val($("#sel_year option:first").val());
+          }
+
+          var enginecode_html = '<option selected="" value="" disabled>Engine Code</option>';
+          var enginecode_uniqe = [];
+          $.each(engineCode,function(index,val){          
+            if(($.inArray( val, enginecode_uniqe ) == -1)){  
+              if(val != '' && val != '-'){
+                if(val.length !== 0){
+                  enginecode_html += '<option value="'+val+'">'+val+'</option>';
+                  enginecode_uniqe.push(val);
+                }
+              }
+            }
+          }) 
+          enginecode_html += '<option value="">Reset this filter</option>';
+          $('#sel_EngineCode').html(enginecode_html);
+          if(sel_EngineCode){
+            $('.nice-select').removeClass('open');
+            $("#sel_EngineCode").val($("#sel_EngineCode option:first").val());
+          }
+        }
+        
+        
+//     	console.log('--------------------');
+//     	console.log(search_text +'|'+ sel_product_type +'|'+ sel_product_category +'|'+ sel_manufacturer +'|'+ 
+//            sel_model +'|'+ sel_transmission +'|'+ sel_vehicle +'|'+ sel_year +'|'+ sel_EngineCode );
+    
+       	if(search_text == '' && sel_product_type == undefined && sel_product_category == undefined && sel_manufacturer == null && 
+           sel_model == null && sel_transmission == null && sel_vehicle == null && sel_year == null && sel_EngineCode == null){
+        	
+          console.log("MMM");
+//           console.log(manufacturer);
+          
+          
+          if(sel_manufacturer == null){
+          	var selected = 'selected';  
+            
+            var manufacturer_html = '<option '+selected+' value="" disabled>Manufacturer</option>';
+            var manufacturer_uniqe = [];
+
+            $.each(manufacturer,function(index,val){ 
+              if(($.inArray( val, manufacturer_uniqe ) == -1)){
+                if(val != '' && val != '-'){     
+				
+                  if(val.length !== 0){
+                    var selected = '';
+                    if(sel_manufacturer == val){
+                        selected = 'selected';
+                    }
+
+                    manufacturer_html += '<option '+selected+' value="'+val+'" >'+val+'</option>';
+                    manufacturer_uniqe.push(val);
+                  }
+                }
+              }
+            }); 
+            manufacturer_html += '<option value="">Reset this filter</option>';
+            $('#sel_manufacturer').html(manufacturer_html);
+		  }
+          
+//           if(sel_manufacturer){
+//             $('.nice-select').removeClass('open');
+//             $("#sel_manufacturer").val($("#sel_manufacturer option:first").val());
+//           }
+
+
+
+          var model_html = '<option selected="" value="" disabled>Model</option>';
+          var model_uniqe = [];
+          $.each(model,function(index,val){ 
+            var model_split = val.split(",");
+            $.each(model_split, function(index1, val1){
+              var model_split1 = val1.split("/");
+              $.each(model_split1, function(index2,val2){
+                  if(($.inArray( val2, model_uniqe ) == -1)){
+                  if(val2 != '' && val2 != '-'){
+                    if(val2.length !== 0){
+                      model_html += '<option value="'+val2+'">'+val2+'</option>';
+                      model_uniqe.push(val2);
+                    }
+                  }
+                }    
+              });
+            });          
+          }) ;   
+          model_html += '<option value="">Reset this filter</option>';
+          $('#sel_model').html(model_html);
+          
+          if(sel_model){
+            $('.nice-select').removeClass('open');
+            $("#sel_model").val($("#sel_model option:first").val());
+          }
+
+
+          var transmission_html = '<option selected="" value="" disabled>Transmission</option>';
+          var transmission_uniqe = [];
+          $.each(transmission,function(index,val){          
+            if(($.inArray( val, transmission_uniqe ) == -1)){ 
+              if(val != '' && val != '-'){
+                if(val.length !== 0){
+                  transmission_html += '<option value="'+val+'">'+val+'</option>';
+                  transmission_uniqe.push(val);
+                }
+              }
+            }
+          })        
+          transmission_html += '<option value="">Reset this filter</option>';
+          $('#sel_transmission').html(transmission_html);
+          if(sel_transmission){
+            $('.nice-select').removeClass('open');
+            $("#sel_transmission").val($("#sel_transmission option:first").val());
+          }
+
+
+          var vehicle_html = '<option selected="" value="" disabled>Vehicle</option>';
+          var vehicle_uniqe = [];
+          $.each(vehicle,function(index,val){          
+            if(($.inArray( val, vehicle_uniqe ) == -1)){
+              if(val != '' && val != '-'){
+                if(val.length !== 0){
+                  vehicle_html += '<option value="'+val+'">'+val+'</option>';
+                  vehicle_uniqe.push(val);
+                }
+              }
+            }
+          })        
+          vehicle_html += '<option value="">Reset this filter</option>';
+          $('#sel_vehicle').html(vehicle_html);
+          if(sel_vehicle){
+            $('.nice-select').removeClass('open');
+            $("#sel_vehicle").val($("#sel_vehicle option:first").val());
+          }
+
+
+          var year_html = '<option selected="" value="" disabled>Year</option>';
+          var year_uniqe = [];
+          $.each(year,function(index,val){          
+            if(($.inArray( val, year_uniqe ) == -1)){ 
+              var valM = val.replace(/ /g,'');
+              
+              if(valM != '' && valM != '-'){
+                if(valM.length != 0){
+                  year_html += '<option value="'+val+'">'+val+'</option>';
+                  year_uniqe.push(val);
+                }
+              }
+            }
+          })    
+          year_html += '<option value="">Reset this filter</option>';
+          $('#sel_year').html(year_html);
+          if(sel_year){
+            $('.nice-select').removeClass('open');
+            $("#sel_year").val($("#sel_year option:first").val());
+          }
+
+          var enginecode_html = '<option selected="" value="" disabled>Engine Code</option>';
+          var enginecode_uniqe = [];
+          $.each(engineCode,function(index,val){          
+            if(($.inArray( val, enginecode_uniqe ) == -1)){  
+              if(val != '' && val != '-'){
+                if(val.length !== 0){
+                  enginecode_html += '<option value="'+val+'">'+val+'</option>';
+                  enginecode_uniqe.push(val);
+                }
+              }
+            }
+          })  
+          enginecode_html += '<option value="">Reset this filter</option>';
+          $('#sel_EngineCode').html(enginecode_html);
+          if(sel_EngineCode){
+            $('.nice-select').removeClass('open');
+            $("#sel_EngineCode").val($("#sel_EngineCode option:first").val());
+          }
+          
+        }
+        
+    	
+                
+//         if(is_product_category){
+//           $('select').niceSelect('update');
+//         }
+    
+//     	$('#sel_manufacturer').append('<option value="">Reset this filter</option>');
+//         $('#sel_model').append('<option value="">Reset this filter</option>');
+//         $('#sel_transmission').append('<option value="">Reset this filter</option>');
+//         $('#sel_vehicle').append('<option value="">Reset this filter</option>');
+//         $('#sel_year').append('<option value="">Reset this filter</option>');
+//         $('#sel_EngineCode').append('<option value="">Reset this filter</option>');
+       	$('select').niceSelect('update');
+      	
+        
+        
+  }
+  
+   
+  
+  function RanderProduct(products,start,limit){
+  
+    	var productHtml = '';
+  var length = Object.keys(products).length;
+  var column_size = '3';
+ var default_rows = 3;	
+          
+    if(length <= 0) {
+      var html = '<div class="grid__item small--text-center">\
+              <p class="text-center">'+NotMatch+'</p>\
+          </div>';
+          
+      $('#product_slider').removeClass('slick-initialized');  
+      $('#product_slider').removeClass('slick-slider');
+      $('#product_slider').html(''); /* Remove current slides elements, in case that you want to show new slides. */
+
+      $("#product_slider").html(html);
+      
+    } else {      
+      var countProduct = 0;
+
+        $.each(products, function( key, product ) {
+          
+          countProduct++;
+//           if(countProduct > limit){
+//             return false;
+//           }
+          
+//           if(countProduct > start  ){
+            
+              if(length < 9 ){
+                if(length == 3 || length < 3){
+                  default_rows = 1;
+                }else if(length == 6 || length < 6){
+                  default_rows = 2;
+                } else if(length == 9 || length < 9){
+                  default_rows = 3;
+                }
+              } 
+          
+          	  if(length < 4 ){
+                if(length == 3){
+                  column_size = '4';
+                }
+
+                if(length == 2){
+                  column_size = '6';
+                }
+
+                if(length == 1){
+                  column_size = '12';
+                }
+              }
+          
+          	  if ($(window).width() > 768) {
+                 column_size = '12';
+              }
+          		
+              if ($(window).width() < 768) {
+          		default_rows = 1;
+              }
+
+              	productHtml += '<div class="col-lg-'+column_size+'">\
+                  <div class="single-blog mt-30 mb-30">\
+                    <div class="thumb">\
+                      <a target="_blank" href="'+product.product_url+'"><img src="'+product.image+'"></a>\
+                  </div>\
+                  <div class="thumb-content">\
+                      <h3 class="title">'+product.manufacturer+' <br/><span>'+product.year+'</span></h3>\
+                      <h3 class="sub_title">'+product.price+'</span></h3>\
+                      <form method="post" action="/cart/add">\
+                          <input type="hidden" name="id" value="'+product.first_variants_id+'">\
+                          <input type="submit" value="Add to cart" class="btn add_to_cart">\
+                      </form>\
+                  </div>\
+                  </div>\
+                </div>';
+//           	}
+          });
+
+          $('#product_slider').removeClass('slick-initialized');  
+          $('#product_slider').removeClass('slick-slider');
+      	
+//           if(start == 0){
+            $('#product_slider').html(''); /* Remove current slides elements, in case that you want to show new slides. */
+//           }
+      
+          $("#product_slider").html(productHtml);
+			
+      		var item_length = $('#product_slider > div').length;
+        	$('#product_slider').slick({
+              initialSlide:defaultSlide,
+              dots: false,
+              infinite: false,
+              speed: 800,
+              slidesToShow: 3,
+              slidesToScroll: 1,
+              rows:default_rows,
+              arrows: true,
+              prevArrow:'<span class="prev"><i class="lni-chevron-left"></i></span>',
+              nextArrow: '<span class="next"><i class="lni-chevron-right"></i></span>',
+              responsive: [
+                  {
+                    breakpoint: 1200,
+                    settings: {
+                      slidesToShow: 3,
+                    }
+                  },
+                  {
+                    breakpoint: 1150,
+                    settings: {
+                      slidesToShow: 3,
+                    }
+                  },
+                  {
+                    breakpoint: 990,
+                    settings: {
+                      slidesToShow: 4,
+                    }
+                  },
+                  {
+                    breakpoint: 769,
+                    settings: {
+                      slidesToShow: 3,
+                    }
+                  },
+                  {
+                    breakpoint: 576,
+                    settings: {
+                      slidesToShow: 1,
+                    }
+                  }
+              ],
+
+          });
+      
+//       	  let TotalShowslides = $('#product_slider').slick('slickGetOption', 'slidesToShow');
+//       	  console.log(TotalShowslides+'|DDDD');
+//           item_length = (item_length - TotalShowslides);
+      	
+//           $('#product_slider').on('afterChange', function(event, slick, currentSlide) {
+            	
+//               if (item_length == currentSlide && currentSlide != 0) {
+//                 defaultSlide = currentSlide;
+                
+// 				RanderProduct(products,(currentSlide+3), (item_length+8))
+//               }
+//         	})
+    }
+  
+  }        
+  function ResetFilter(){
+  	defaultSlide = 0;
+    $('input[name="product_types"]').prop('checked', false);
+    $('input[name="product-category"]').prop('checked', false);
+    
+    $('#search_text').val('');
+    $("option:selected").prop("selected", false);
+    
+    $('select[name="sel_manufacturer"]').val('');
+    $('select[name="sel_model"]').val('');
+    $('select[name="sel_transmission"]').val('');
+    $('select[name="sel_vehicle"]').val('');
+    $('select[name="sel_year"]').val('');
+    $('select[name="sel_EngineCode"]').val('');
+    
+    $('select').niceSelect('update'); 
+    
+    SetProducts();
+  }
+    
+    function SetProductWithOption(isNew = false){
+      	
+      	IsFirstTime = false;
+      if(isNew == true){
+      	IsFirstTime = true;
+      }
+      	defaultSlide = 0;
+    	$('#search_text').val('');
+        $("option:selected").prop("selected", false);
+
+        $('select[name="sel_manufacturer"]').val('');
+        $('select[name="sel_model"]').val('');
+        $('select[name="sel_transmission"]').val('');
+        $('select[name="sel_vehicle"]').val('');
+        $('select[name="sel_year"]').val('');
+        $('select[name="sel_EngineCode"]').val('');
+      	SetProducts();
+    }
+</script>
+
+<section class="slider-area inner_page_banner">
+        <div class="container">
+			<div class="row">
+			
+				<div class="col-lg-12 col-md-12 col-sm-12 col-12">
+					<div class="inner_banner">
+						<img src="https://cdn.shopify.com/s/files/1/0418/8586/0008/files/Inner_banner.png?v=1593255439">
+					</div>
+				</div>
+				
+			</div>
+		</div>
+</section>
+ 
+
+<div class="page-width" style="padding-top:60px;" id="Collection">
+  <header class="section-header text-center">
+    <h1>{{ page_title }}</h1>
+  </header>
+
+  
+  {% assign manufacturer = "" | split: "," %}
+    {% assign model = "" | split: "," %}
+    {% assign transmission = "" | split: "," %}
+    {% assign vehicle = "" | split: "," %}
+    {% assign year = "" | split: "," %}
+    {% assign EngineCode = "" | split: "," %}
+    
+    {% for product in collection.products %}
+    	
+    	{% assign global = product.metafields.global %}
+    	{% assign key = 'Manufacturer' %}
+    
+    	{% assign manufacturer_handle = global.Manufacturer | split: ',' %}
+    	{% assign manufacturer = manufacturer|concat:manufacturer_handle %}
+    
+    	{% assign key = 'Model' %}
+    	{% assign model_handle = global.Model | split: ',' %}
+    	{% assign model = model|concat:model_handle %}
+    
+    	{% assign key = 'Transmission' %}
+    	{% assign transmission_handle = global.Transmission | split: ',' %}
+    	{% assign transmission = transmission|concat:transmission_handle %}
+    
+    	{% assign key = 'Vehicle' %}
+    	{% assign vehicle_handle = global.Vehicle | split: ',' %}
+    	{% assign vehicle = vehicle|concat:vehicle_handle %}
+    
+    	{% assign key = 'Year' %}
+    	{% assign year_handle = global.Year | split: ',' %}
+    	{% assign year = year|concat:year_handle %}
+    
+    	{% assign key = 'Engine' %}
+    	{% assign EngineCode_handle = global.Engine | split: ',' %}
+    	{% assign EngineCode = EngineCode|concat:EngineCode_handle %}
+    
+    {% endfor %}
+    
+    
+    <div class="row">
+      	<div class="col-lg-4 left-sidebar">
+          <!-- RADIO BUTTONS BLOCK -->
+          
+
+          <div class="col-12 col-sm-12 col-md-12 col-lg-12 mt-5">
+            <div class="title">
+              <h3>Product Category</h3>
+            </div>
+            <div class="frb-group">
+
+              {% assign count = 0 %}
+              {% for collection in collections %}
+              {% assign count = count | plus: 1 %}
+              {% unless  collection.title  == blank %}
+              <div class="frb frb-danger">
+                <input class="category_chk" data-url="{{ collection.url }}" type="radio" id="radio-button-cat-{{count}}" name="product-category" value="{{ collection.title }}" onclick="window.location.href = '{{ collection.url }}';">
+                <label for="radio-button-cat-{{count}}">
+                  <span class="frb-title">{{ collection.title }}</span>
+                </label>
+              </div>
+              {% endunless  %}
+              {% endfor %}
+
+            </div>
+          </div>
+          <input type="hidden" id="page_is_dirty" name="page_is_dirty" value="0" />
+          <div class="col-12 col-sm-12 col-md-12 col-lg-12 mt-20">
+            <div class="title">
+              <h3>Product Type</h3>
+            </div>
+            <div class="frb-group">
+
+              {% assign count = 0 %}
+              {% assign product_types = "" | split: "," %}
+
+              {% for product in collection.products %}
+                  
+
+                  {%- if product_types contains product.type -%}
+                  {% else %}
+              		{% assign count = count | plus: 1 %}
+                    <div class="frb frb-danger">
+                        <input type="radio" id="radio-button-{{count}}" name="product_types" value="{{ product.type}}" onclick="SetProductWithOption(true);">
+                        <label for="radio-button-{{count}}">
+                            <span class="frb-title">{{ product.type }}</span>
+                        </label>
+                    </div>
+                  {% endif %}
+
+                  {% assign type_of_product = product.type | split: ',' %}
+                  {% assign product_types = product_types|concat:type_of_product %}
+
+              {% endfor %}
+
+			  {% if count == 0 %}
+              	<div class="frb frb-danger">
+                  <label for="radio-button-{{count}}">
+                          <p class="">Product type not available for selected category.</p>	
+                  </label>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+      </div>
+      
+		<div class="col-lg-8 right-section">
+					<div class="filter_sec">
+						<div class="details">
+							<div class="row">
+								<div class="col-lg-12 col-md-12 product_search">
+                                  <form class="search-form search-bar__form" action="{{ routes.search_url }}" method="get" role="search">
+                                    
+                                  
+									<input name="q" class="search-query form-control" id="search_text" placeholder="Search by Dolphin No, Brand, Model, Year, OE Number." type="text">
+									<span class="input-group-btn">
+										<button class="btn btn-danger" type="submit" > 
+											<i class="fa fa-search"></i>
+										</button>
+									</span> 
+                                    
+                                  </form>
+								</div>
+							</div>
+						</div>
+						<div class="details">
+							<div class="row">
+								<div class="title col-lg-12">
+									<h1>Search by brand</h1>
+								</div>
+								<div class="col-lg-4">
+									<select class="custom-select" id="sel_manufacturer" name="sel_manufacturer" onchange="SetProducts(true);">
+										<option selected="" value="" disabled>Manufacturer</option>
+                                      
+                                      {% assign manufacturer_unique = "" | split: "," %}
+                                      {% for manufacturer_item in manufacturer %}
+                                      	
+                                      	{%- if manufacturer_unique contains manufacturer_item -%}
+            							{% else %}
+                                      		<option value="{{manufacturer_item}}">{{manufacturer_item}}</option>
+                                      	{% endif %}
+                                      
+                                      	{% assign manufacturer_unique_handle = manufacturer_item | split: ',' %}
+            							{% assign manufacturer_unique = manufacturer_unique|concat:manufacturer_unique_handle %}
+									  {% endfor %}
+                                                                           
+									</select>
+								</div>
+								<div class="col-lg-4">
+									<select class="custom-select" id="sel_model" name="sel_model" onchange="SetProducts();">
+										<option selected="" value="" disabled>Model</option>
+                                      {% assign model_unique = "" | split: "," %}
+                                      {% for model_item in model %}
+                                      	
+                                      	{% assign model_array = model_item | split: "/" %}
+                                      	
+                                      	{% for model_split_item in model_array %}
+                                      
+                                      		{%- if model_unique contains model_split_item -%}
+                                            {% else %}
+                                                <option value="{{model_split_item|strip}}">{{model_split_item}}</option>
+                                            {% endif %}
+
+                                            {% assign model_unique_handle = model_split_item | split: ',' %}
+                                            {% assign model_unique = model_unique|concat:model_unique_handle %}
+  
+                                      	{% endfor %}
+                                      
+                                      	
+									  {% endfor %}
+                                      
+									</select>
+								</div>
+								<div class="col-lg-4">
+									<select class="custom-select" id="sel_transmission" name="sel_transmission" onchange="SetProducts();">
+										<option selected="" value="" disabled>Transmission</option>
+                                      {% assign transmission_unique = "" | split: "," %}
+                                      {% for transmission_item in transmission %}
+                                      	
+                                      	{%- if transmission_unique contains transmission_item -%}
+            							{% else %}
+                                      		<option value="{{transmission_item}}">{{transmission_item}}</option>
+                                      	{% endif %}
+                                      
+                                      	{% assign transmission_unique_handle = transmission_item | split: ',' %}
+            							{% assign transmission_unique = transmission_unique|concat:transmission_unique_handle %}
+									  {% endfor %}
+                                      
+									</select>
+								</div>
+								<div class="col-lg-4">
+									<select class="custom-select" id="sel_vehicle" name="sel_vehicle" onchange="SetProducts();">
+										<option selected="" value="" disabled>Vehicle </option>
+                                      
+                                      {% assign vehicle_unique = "" | split: "," %}
+                                      {% for vehicle_item in vehicle %}
+                                      	
+                                      	{%- if vehicle_unique contains vehicle_item -%}
+            							{% else %}
+                                      		<option value="{{vehicle_item}}">{{vehicle_item}}</option>
+                                      	{% endif %}
+                                      
+                                      	{% assign vehicle_unique_handle = vehicle_item | split: ',' %}
+            							{% assign vehicle_unique = vehicle_unique|concat:vehicle_unique_handle %}
+									  {% endfor %}
+                                      
+									</select>
+								</div>
+								<div class="col-lg-4">
+									<select class="custom-select" id="sel_year" name="sel_year" onchange="SetProducts();">
+										<option selected="" value="" disabled>Year</option>
+                                       {% assign year_unique = "" | split: "," %}
+                                      {% for year_item in year %}
+                                      	
+                                      	{%- if year_unique contains year_item -%}
+            							{% else 
+                                        	{% if year_item != '-' %}
+                                      		<option value="{{year_item}}">{{year_item}}</option>
+                                      	{% endif %}
+                                      
+                                      	{% assign year_unique_handle = year_item | split: ',' %}
+            							{% assign year_unique = year_unique|concat:year_unique_handle %}
+									  {% endfor %}
+                                      
+									</select>
+								</div>
+								<div class="col-lg-4">
+									<select class="custom-select" id="sel_EngineCode" name="sel_EngineCode" onchange="SetProducts();">
+										<option selected="" value="" disabled>Engine Code</option>
+                                      
+                                      {% assign EngineCode_unique = "" | split: "," %}
+                                      {% for EngineCode_item in EngineCode %}
+                                      	
+                                      	{%- if EngineCode_unique contains EngineCode_item -%}
+            							{% else %}
+                                      		{%- if EngineCode_item != '-' %}
+                                      			<option value="{{EngineCode_item}}">{{EngineCode_item}}</option>
+                                      		{% endif %}
+                                      	{% endif %}
+                                      
+                                      	{% assign EngineCode_unique_handle = EngineCode_item | split: ',' %}
+            							{% assign EngineCode_unique = EngineCode_unique|concat:EngineCode_unique_handle %}
+									  {% endfor %}
+                                      
+									</select>
+								</div>
+							</div>
+							
+                          	<div class="row" id="">
+                          		<div class="col-lg-12 col-md-12 ">
+                                  <button id="ResetFilter" type="button" class="btn btn-danger" onclick="window.location.href = '{{collection_handle}}'">Reset filter</button>
+                                  <span class="btn btn-danger mm15">Total Products <span id="total_products"></span> </span>
+                              	</div>
+                              	
+                          	</div>
+                          
+							<div class="row innerpage_slider">
+								<div class="col-lg-12">
+									<div class="row thumbnail-four-active pt-20" id="product_slider">
+										
+                                      	
+										
+										
+									</div> <!-- blog-tow-active -->
+								</div>
+                              	
+                              	<div class="col-lg-12 text-center" style="font-size: 10px;padding-top: 5px">
+                                	Displaying 500 products/page  	
+                              	</div>
+                              	
+                              	<div class="col-lg-12" id="mypagination">
+                                  	
+                              	</div>
+							</div>			
+
+								
+						
+						</div>						
+						
+					</div>
+				</div>
+    </div>
+</div>
+
+
+
+{% schema %}
+{
+  "name": {
+    "da": "Siden Kollektionsliste",
+    "de": "Kategorien-Liste Seite",
+    "en": "Collections list page",
+    "es": "Lista de colecciones",
+    "fi": "Kokoelmaluettelosivu",
+    "fr": "Liste des collections",
+    "hi": "कलेक्शन्स सूची पेज",
+    "it": "Elenco collezioni",
+    "ja": "コレクションリストのページ",
+    "ko": "컬렉션 목록 페이지",
+    "nb": "Samlingsliste-side",
+    "nl": "Pagina Collectielijst",
+    "pt-BR": "Lista de coleções",
+    "pt-PT": "Página da lista de coleções",
+    "sv": "Kollektionslistsida",
+    "th": "หน้ารายการคอลเลกชัน",
+    "zh-CN": "产品系列列表页面",
+    "zh-TW": "商品系列清單頁面"
+  },
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": {
+        "da": "Alle dine kollektioner vises som standard. Hvis du vil tilpasse din liste, skal du vælge \"Valgte\" og tilføje kollektioner.",
+        "de": "Alle Kategorien sind automatisch gelistet. Zum Ändern der Liste wählen Sie 'Ausgewählt' und fügen Sie Kategorien hinzu.",
+        "en": "All of your collections are listed by default. To customize your list, choose 'Selected' and add collections.",
+        "es": "Todas tus colecciones están enlistadas por defecto. Para personalizar tu lista, elige 'Seleccionadas' y agrega colecciones.",
+        "fi": "Kaikki kokoelmasi näkyvät oletuksena. Voit mukauttaa luetteloa napauttamalla \"Valittu\" ja lisäämällä kokoelmia.",
+        "fr": "Toutes vos collections sont listées par défaut. Pour personaliser votre liste, cliquez sur « Sélection » et ajoutez des collections.",
+        "hi": "आपके सभी कलेक्शन्स डिफ़ॉल्ट रूप से सूचीबद्ध हैं. अपनी सूची कस्टमाइज़ करने के लिए, 'चयनित' चुनें और कलेक्शन्स जोड़ें.",
+        "it": "Tutte le tue collezioni vengono elencate per impostazione predefinita. Per personalizzare il tuo elenco, scegli \"Selezionato\" e aggiungi delle collezioni.",
+        "ja": "すべてのコレクションがデフォルトで一覧表示されます。一覧をカスタマイズするには、「選択済み」を選択してコレクションを追加します。",
+        "ko": "모든 콜렉션이 기본으로 나열됩니다. 목록을 사용자 지정하려면 '선택'을 선택하고 컬렉션을 추가하십시오.",
+        "nb": "Alle samlingene dine vises som standard. For å tilpasse listen, velg «Valgte» og legg til samlinger.",
+        "nl": "Standaard worden al je collecties weergegeven. Kies Geselecteerd en voeg collecties toe om de lijst aan te passen.",
+        "pt-BR": "Todas as suas coleções são listadas por padrão. Para personalizar sua lista, escolha \"Selecionado\" e adicione coleções.",
+        "pt-PT": "Todas as suas coleções são listadas por predefinição. Para personalizar a sua lista, escolha \"Selecionado\" e adicione coleções.",
+        "sv": "Alla dina kollektioner är listade som standard. För att anpassa din lista väljer du \"Vald\" och lägger till kollektioner.",
+        "th": "มีการระบุคอลเลกชันทั้งหมดของคุณไว้เป็นค่าเริ่มต้น หากต้องการปรับแต่งรายการของคุณ ให้เลือก 'ที่เลือก' แล้วเพิ่มคอลเลกชัน",
+        "zh-CN": "默认情况下列出您的所有产品系列。若要自定义列表，请选择“已选择”并添加产品系列。",
+        "zh-TW": "系統預設會將您所有的商品系列都列入清單。如果想自訂清單，請點選「已選取」並新增商品系列。"
+      }
+    },
+    {
+      "type": "radio",
+      "id": "display_type",
+      "label": {
+        "da": "Vælg de kollektioner, der skal vises",
+        "de": "Kategorien auswählen, die angezeigt werden sollen",
+        "en": "Select collections to show",
+        "es": "Selecciona colecciones para mostrar",
+        "fi": "Valitse näytettävät kokoelmat",
+        "fr": "Sélectionner les collections à afficher",
+        "hi": "दिखाने के लिए कलेक्शन्स चुनें",
+        "it": "Seleziona le collezioni da mostrare",
+        "ja": "表示するコレクションを選択する",
+        "ko": "표시할 컬렉션 선택",
+        "nb": "Velg samlinger som skal vises",
+        "nl": "Collecties selecteren om weer te geven",
+        "pt-BR": "Selecione coleções para exibir",
+        "pt-PT": "Selecionar coleções para mostrar",
+        "sv": "Välj kollektioner som ska visas",
+        "th": "เลือกคอลเลกชันที่จะแสดง",
+        "zh-CN": "选择要显示的产品系列",
+        "zh-TW": "選取欲顯示的商品系列"
+      },
+      "default": "all",
+      "options": [
+        {
+          "value": "all",
+          "label": {
+            "da": "Alle",
+            "de": "Alle",
+            "en": "All",
+            "es": "Todos",
+            "fi": "Kaikki",
+            "fr": "Toutes",
+            "hi": "सभी",
+            "it": "Tutte",
+            "ja": "すべて",
+            "ko": "모두",
+            "nb": "Alle",
+            "nl": "Alle",
+            "pt-BR": "Tudo",
+            "pt-PT": "Tudo",
+            "sv": "Alla",
+            "th": "ทั้งหมด",
+            "zh-CN": "所有",
+            "zh-TW": "全部"
+          }
+        },
+        {
+          "value": "selected",
+          "label": {
+            "da": "Valgt",
+            "de": "Ausgewählt",
+            "en": "Selected",
+            "es": "Seleccionadas",
+            "fi": "Valittu",
+            "fr": "Sélection",
+            "hi": "चयनित",
+            "it": "Selezionato",
+            "ja": "選択済み",
+            "ko": "선택됨",
+            "nb": "Valgt",
+            "nl": "Geselecteerd",
+            "pt-BR": "Selecionado",
+            "pt-PT": "Selecionado",
+            "sv": "Valt",
+            "th": "เลือกแล้ว",
+            "zh-CN": "已选",
+            "zh-TW": "已選取"
+          }
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "sort",
+      "label": {
+        "da": "Sortér kollektioner efter:",
+        "de": "Kategorien sortieren nach:",
+        "en": "Sort collections by:",
+        "es": "Ordenar colecciones por:",
+        "fi": "Lajittele kokoelmat seuraavasti:",
+        "fr": "Trier les collections par:",
+        "hi": "इसके द्वारा कलेक्शन्स को क्रमबद्ध करें:",
+        "it": "Ordina le collezioni per:",
+        "ja": "コレクションの並べ替え方法:",
+        "ko": "컬렉션 정렬 기준:",
+        "nb": "Sorter samlinger etter:",
+        "nl": "Collecties sorteren op:",
+        "pt-BR": "Organizar coleções por:",
+        "pt-PT": "Ordenar coleções por:",
+        "sv": "Sortera kollektioner efter:",
+        "th": "จัดเรียงคอลเลกชันตาม:",
+        "zh-CN": "产品系列排序依据：",
+        "zh-TW": "以下列方式排序商品系列："
+      },
+      "info": {
+        "da": "Sortering gælder kun, når \"Alle\" er valgt",
+        "de": "Sortieren funktioniert nur, wenn 'Alle' ausgewählt ist",
+        "en": "Sorting only applies when 'All' is selected",
+        "es": "La función ordenar solo se aplica cuando se selecciona \"Todas\"",
+        "fi": "Lajittelua sovelletaan vain, kun valintana on \"Kaikki\"",
+        "fr": "Le tri ne s'applique que lorsque “Toutes“ est sélectionné",
+        "hi": "क्रमबद्ध करना केवल तब लागू होती है जब 'सभी' का चयन किया जाता है",
+        "it": "L'ordinamento viene applicato solo quanto è selezionato \"Tutto\"",
+        "ja": "「すべて」が選択されている場合にのみ並べ替えを適用する",
+        "ko": "정렬은 '모두'를 선택한 경우에만 적용됩니다.",
+        "nb": "Sortering gjelder bare når «Alle» er valgt",
+        "nl": "Sorteren is alleen van toepassing als Alles is geselecteerd",
+        "pt-BR": "A organização só se aplica quando \"Tudo\" está selecionado",
+        "pt-PT": "A ordenação só se aplica quando \"Tudo\" está selecionado",
+        "sv": "Sortering gäller endast när \"Alla\" är markerat",
+        "th": "การจัดเรียงจะใช้ได้เมื่อเลือก 'ทั้งหมด' เท่านั้น",
+        "zh-CN": "仅在选择“全部”时应用排序",
+        "zh-TW": "只有在選擇「全部」的時候才能排序"
+      },
+      "default": "alphabetical",
+      "options": [
+        {
+          "value": "products_high",
+          "label": {
+            "da": "Produktantal, høj til lav",
+            "de": "Produktanzahl, hoch zu niedrig",
+            "en": "Product count, high to low",
+            "es": "Recuento de productos, de mayor a menor",
+            "fi": "Tuotteiden määrä suurimmasta pienimpään",
+            "fr": "Nombre de produits, ordre décroissant",
+            "hi": "उत्पाद गणना, उच्च से निम्न",
+            "it": "Conteggio decrescente prodotti",
+            "ja": "商品数の多い順",
+            "ko": "제품 개수, 높은 개수부터",
+            "nb": "Produktantall, høy til lav",
+            "nl": "Aantal producten, van hoog naar laag",
+            "pt-BR": "Contagem de produtos, alta para baixa",
+            "pt-PT": "Contagem de produtos, alta para baixa",
+            "sv": "Produktantal, högt till lågt",
+            "th": "จำนวนสินค้า จากสูงไปต่ำ",
+            "zh-CN": "产品数量，从高到低",
+            "zh-TW": "產品數量，從高到低"
+          }
+        },
+        {
+          "value": "products_low",
+          "label": {
+            "da": "Produktantal, lav til høj",
+            "de": "Produktanzahl, niedrig zu hoch",
+            "en": "Product count, low to high",
+            "es": "Recuento de productos, de menor a mayor",
+            "fi": "Tuotteiden määrä pienimmästä suurimpaan",
+            "fr": "Nombre de produits, ordre croissant",
+            "hi": "उत्पाद गणना, निम्न से उच्च",
+            "it": "Conteggio crescente prodotti",
+            "ja": "商品数の少ない順",
+            "ko": "제품 개수, 낮은 개수부터",
+            "nb": "Produktantall, lav til høy",
+            "nl": "Aantal producten, van laag naar hoog",
+            "pt-BR": "Contagem de produtos, baixa para alta",
+            "pt-PT": "Contagem de produtos, baixa para alta",
+            "sv": "Produktantal, lågt till högt",
+            "th": "รูปแบบรูปภาพ จากต่ำไปสูง",
+            "zh-CN": "产品数量，从低到高",
+            "zh-TW": "產品數量，從低到高"
+          }
+        },
+        {
+          "value": "alphabetical",
+          "label": {
+            "da": "Alfabetisk, A-Å",
+            "de": "Alphabetisch, A-Z",
+            "en": "Alphabetically, A-Z",
+            "es": "Alfabéticamente, A-Z",
+            "fi": "Aakkosjärjestyksessä A–Z",
+            "fr": "Alphabétique, A-Z",
+            "hi": "वर्णमाला के अनुसार: A-Z",
+            "it": "In ordine alfabetico, A - Z",
+            "ja": "アルファベット順、 A-Z",
+            "ko": "알파벳순, A-Z",
+            "nb": "Alfabetisk, A–Å",
+            "nl": "Alfabetisch: A-Z",
+            "pt-BR": "Ordem alfabética, A–Z",
+            "pt-PT": "Alfabeticamente, A-Z",
+            "sv": "Alfabetiskt, A–Ö",
+            "th": "เรียงตามตัวอักษร A-Z",
+            "zh-CN": "按字母顺序排序，A-Z",
+            "zh-TW": "依字母順序 A 到 Z"
+          }
+        },
+        {
+          "value": "alphabetical_reversed",
+          "label": {
+            "da": "Alfabetisk, Å-A",
+            "de": "Alphabetisch, Z-A",
+            "en": "Alphabetically, Z-A",
+            "es": "Alfabéticamente, Z-A",
+            "fi": "Aakkosjärjestyksessä Z–A",
+            "fr": "Alphabétique, Z-A",
+            "hi": "वर्णमाला के अनुसार: Z-A",
+            "it": "In ordine alfabetico, Z - A",
+            "ja": "アルファベット順、 Z-A",
+            "ko": "알파벳순, Z-A",
+            "nb": "Alfabetisk, Å–A",
+            "nl": "Alfabetisch: Z-A",
+            "pt-BR": "Ordem alfabética, Z–A",
+            "pt-PT": "Alfabeticamente, Z-A",
+            "sv": "Alfabetiskt, Ö–A",
+            "th": "เรียงตามตัวอักษร Z-A",
+            "zh-CN": "按字母顺序排序，Z-A",
+            "zh-TW": "依字母順序 Z 到 A"
+          }
+        },
+        {
+          "value": "date",
+          "label": {
+            "da": "Dato, ældre til nyere",
+            "de": "Datum, alt zu neu",
+            "en": "Date, old to new",
+            "es": "Fecha: antiguo(a) a reciente",
+            "fi": "Päivämäärä vanhimmasta uusimpaan",
+            "fr": "Date, anciennes à récentes",
+            "hi": "दिनांक, पुरानी से नई",
+            "it": "Data, dal più vecchio al più recente",
+            "ja": "古い商品順",
+            "ko": "날짜(오래된 날짜부터)",
+            "nb": "Dato, gammelt til nytt",
+            "nl": "Datum: oud naar nieuw",
+            "pt-BR": "Data, mais antiga primeiro",
+            "pt-PT": "Data, mais antigos",
+            "sv": "Datum, gammalt till nytt",
+            "th": "วันที่ จากเก่าไปใหม่",
+            "zh-CN": "日期从旧到新",
+            "zh-TW": "日期 (從舊到新)"
+          }
+        },
+        {
+          "value": "date_reversed",
+          "label": {
+            "da": "Dato, nyere til ældre",
+            "de": "Datum, neu zu alt",
+            "en": "Date, new to old",
+            "es": "Fecha: reciente a antiguo(a)",
+            "fi": "Päivämäärä uusimmasta vanhimpaan",
+            "fr": "Date, récentes à anciennes",
+            "hi": "दिनांक पुरानी से नई",
+            "it": "Data, dal più recente al più vecchio",
+            "ja": "新着順",
+            "ko": "날짜(최신 날짜부터)",
+            "nb": "Dato, nytt til gammelt",
+            "nl": "Datum: nieuw naar oud",
+            "pt-BR": "Data, mais recente primeiro",
+            "pt-PT": "Data, mais recentes",
+            "sv": "Datum, nytt till gammalt",
+            "th": "วันที่ จากใหม่ไปเก่า",
+            "zh-CN": "日期从新到旧",
+            "zh-TW": "日期 (從新到舊)"
+          }
+        }
+      ]
+    },
+    {
+      "type": "range",
+      "id": "grid",
+      "label": {
+        "da": "Kollektioner pr. række",
+        "de": "Kategorien per Reihe",
+        "en": "Collections per row",
+        "es": "Colecciones por fila",
+        "fi": "Kokoelmia per rivi",
+        "fr": "Collections par rangée",
+        "hi": "प्रति पंक्ति कलेक्शन",
+        "it": "Collezioni per riga",
+        "ja": "行あたりのコレクション数",
+        "ko": "열 별 컬렉션",
+        "nb": "Samlinger per rad",
+        "nl": "Collecties per rij",
+        "pt-BR": "Coleções por linha",
+        "pt-PT": "Coleções por linha",
+        "sv": "Produktserier per rad",
+        "th": "คอลเลกชันต่อแถว",
+        "zh-CN": "每行产品系列数",
+        "zh-TW": "每列商品系列數"
+      },
+      "default": 3,
+      "min": 2,
+      "max": 5,
+      "step": 1
+    }
+  ],
+  "blocks": [
+    {
+      "type": "collection",
+      "name": {
+        "da": "Kollektion",
+        "de": "Kategorie",
+        "en": "Collection",
+        "es": "Colección",
+        "fi": "Kokoelma",
+        "fr": "Collection",
+        "hi": "कलेक्शन",
+        "it": "Collezione",
+        "ja": "コレクション",
+        "ko": "컬렉션",
+        "nb": "Samling",
+        "nl": "Collectie",
+        "pt-BR": "Coleção",
+        "pt-PT": "Coleção",
+        "sv": "Produktserie",
+        "th": "คอลเลกชัน",
+        "zh-CN": "收藏",
+        "zh-TW": "商品系列"
+      },
+      "settings": [
+        {
+          "label": {
+            "da": "Kollektion",
+            "de": "Kategorie",
+            "en": "Collection",
+            "es": "Colección",
+            "fi": "Kokoelma",
+            "fr": "Collection",
+            "hi": "कलेक्शन",
+            "it": "Collezione",
+            "ja": "コレクション",
+            "ko": "컬렉션",
+            "nb": "Samling",
+            "nl": "Collectie",
+            "pt-BR": "Coleção",
+            "pt-PT": "Coleção",
+            "sv": "Produktserie",
+            "th": "คอลเลกชัน",
+            "zh-CN": "收藏",
+            "zh-TW": "商品系列"
+          },
+          "id": "collection",
+          "type": "collection"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
+
+
+<script>
+  $('#search_text').on("keypress", function(e) {
+        if (e.keyCode == 13) {
+          SetProducts();
+        }
+  });
+</script>
